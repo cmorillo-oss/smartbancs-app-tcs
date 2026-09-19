@@ -54,7 +54,7 @@ con recomendaciones financieras por IA.
 ```
 smartbancs-app/
 ├── README.md
-├── AI_USAGE_DECLARATION.md
+├── DECLARACION_USO_IA.md
 ├── docker-compose.yml
 ├── .env.example
 ├── Makefile
@@ -599,7 +599,7 @@ causa raíz con 5 porqués, detección, resolución, qué salió bien, qué sali
 dónde tuvimos suerte, acciones preventivas de infraestructura, acciones preventivas
 de código, con responsable y fecha.
 
-### `AI_USAGE_DECLARATION.md`
+### `DECLARACION_USO_IA.md`
 Plantilla honesta y detallada: herramientas usadas, en qué componentes, cómo se usaron,
 qué se revisó y validó manualmente. Es entregable obligatorio del reto.
 
