@@ -546,7 +546,7 @@ Esta sección existe para protegerte en el Q&A: es mejor decirlo tú antes de qu
 5. **Las rampas son de 19 s medidos por escalón.** Sirven para ver la tendencia, no para caracterizar estados estables largos (no hay prueba de resistencia de horas).
 6. **Resuelto (lecturas con HTTP 500 en saturación):** la prueba de carga se repitió el 2026-09-19 con el código final y todos los errores, también los de lectura, son `503 POOL_TIMEOUT` (`locust_console.txt`).
 7. **Resuelto (faltaba `verification.txt`):** `scripts/load_test.sh` se corrigió (ya no usa `set -e`, así que la verificación se escribe aunque Locust termine con error) y `evidence/load-test-results/verification.txt` está guardado: dinero conservado, ledger cuadrado, 0 deadlocks. Se guardó la corrida más reciente; hay tres corridas con este código o casi idéntico y resultados distintos (ver punto 4).
-8. **Solo se guardó la salida de las pruebas de concurrencia** (`test_concurrency_output.txt`). Las salidas de las unitarias (12 casos) y de integración (2) deben regenerarse con `make test`.
+8. **Resuelto:** las salidas de las pruebas unitarias (12/12) y de integración (2/2), ejecutadas el 2026-09-19, están guardadas en `evidence/test-data/test_unit_output.txt` y `test_integration_output.txt`.
 
 ### 11.2 Sobre el diseño
 9. **Bancs e IA son simulados.** Las latencias (200-500 ms, 300-800 ms) y el umbral de 10 peticiones simultáneas son supuestos, no datos de un sistema real. La IA es un motor de **reglas**, no un modelo entrenado.

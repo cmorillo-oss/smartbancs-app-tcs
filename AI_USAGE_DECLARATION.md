@@ -4,9 +4,8 @@
 **Autora:** Cielo Morillo
 **Fecha de la declaración:** 2026-09-19
 
-> **Cómo leer este documento.** Lo escribió Claude Code a partir del historial del repositorio y de las instrucciones que la autora dio para su elaboración.
-> Todo lo marcado con **[COMPLETAR]** lo debe rellenar la autora con lo que **solo ella sabe** (qué revisó, qué cambió, cuánto tiempo, qué hizo a mano).
-> **Nada marcado como "hecho por la autora" debe quedar sin que ella lo confirme.** Una declaración de IA con afirmaciones que no son ciertas es peor que no tenerla.
+> **Cómo leer este documento.** Lo redactó Claude Code a partir del historial del repositorio y de los datos que la autora dio (el 19/09/2026) sobre cómo trabajó.
+> Lo que dice sobre lo que hizo la autora viene **solo de lo que ella declaró**. Lo que sigue marcado con **[COMPLETAR]** es lo que la autora **no aportó** y debe rellenar (o borrar) ella misma.
 
 ---
 
@@ -16,7 +15,7 @@ Este proyecto se hizo **con mucho apoyo de IA**, y aquí se dice con claridad:
 
 - La **implementación del código** (servicios, SQL, pruebas, scripts, documentación) la escribió **Claude Code**, siguiendo un brief por fases (`CLAUDE_CODE_BRIEF.md`).
 - El **análisis del reto, la planificación y el aprendizaje** se hicieron conversando con **Claude (chat)**.
-- La **autora** decidió el alcance, revisó cada fase, ejecutó y verificó las pruebas y subió los cambios al repositorio.
+- La **autora** definió el alcance y las restricciones, revisó el resultado de cada fase, probó la API a mano desde Swagger, ejecutó ella misma las pruebas unitarias y de integración y subió casi todos los cambios al repositorio. **No escribió ni modificó código ni documentación a mano.**
 
 La autora es responsable de todo lo que se entrega y debe poder defenderlo oralmente. Por eso el código lleva comentarios en español que explican el **porqué** de cada decisión.
 
@@ -26,9 +25,9 @@ La autora es responsable de todo lo que se entrega y debe poder defenderlo oralm
 
 | Herramienta | Modelo / versión | Para qué se usó |
 |---|---|---|
-| **Claude** (chat, claude.ai) | **[COMPLETAR: modelo y fechas aproximadas]** | Análisis del enunciado del reto, planificación, diseño del brief por fases, y **aprendizaje** de los conceptos (deadlocks, outbox, circuit breaker, idempotencia, PSI/KS, etc.) |
-| **Claude Code** (CLI) | Claude Sonnet 5 en la sesión de la Fase 8; **[COMPLETAR: modelo(s) usado(s) en las Fases 1-7]** | Implementación guiada por fases a partir de `CLAUDE_CODE_BRIEF.md`; depuración; redacción de la documentación |
-| Otras herramientas de IA | **[COMPLETAR: p. ej. GitHub Copilot u otras; escribir "ninguna" si no se usó ninguna]** | **[COMPLETAR]** |
+| **Claude** (chat, claude.ai) | Plan Pro. **[COMPLETAR: modelo exacto y fechas aproximadas]** | Análisis del enunciado, plan de trabajo por fases, redacción de `CLAUDE_CODE_BRIEF.md`, guía para instalar el entorno (WSL2, Docker, Git, Python), explicaciones y *quizzes* para aprender el código, revisión de los resultados de cada fase y preparación de la defensa |
+| **Claude Code** (CLI) | **v2.1.277, modelo Claude Sonnet 5** (plan Pro) | Implementación completa del código, las pruebas, los scripts y la documentación, fase por fase, siguiendo el brief |
+| Otras herramientas de IA | **Ninguna** | – |
 
 ---
 
@@ -40,7 +39,9 @@ La autora es responsable de todo lo que se entrega y debe poder defenderlo oralm
 - Elaboración del brief `CLAUDE_CODE_BRIEF.md`, que sirvió como especificación para Claude Code.
 - Explicaciones de conceptos para que la autora pudiera **defenderlos**.
 
-**[COMPLETAR: cuántas conversaciones, qué preguntas de aprendizaje hizo la autora, qué conceptos dice que entendió a fondo y cuáles todavía son débiles. Ser honesta aquí ayuda: el jurado valora saber qué domina cada quien.]**
+Además de lo anterior, el chat se usó para **guiar la instalación del entorno** (WSL2, Docker, Git y Python), para **explicaciones y *quizzes*** con los que la autora aprendió el código, para **revisar los resultados de cada fase** y para **preparar la defensa**. Las decisiones técnicas de fondo (Python/FastAPI y PostgreSQL) las tomó la autora (ver sección 4).
+
+**[COMPLETAR: número aproximado de conversaciones en el chat y fechas; la autora no lo indicó.]**
 
 ### 3.2 Claude Code: implementación por fases
 El trabajo se hizo **una fase por vez**, con detención al final de cada una para que la autora verificara (regla del brief). Cada fase quedó en un commit propio:
@@ -63,19 +64,25 @@ Componentes implementados con Claude Code: los tres servicios (`transaction-api`
 
 ---
 
-## 4. Qué hizo la autora (a confirmar)
+## 4. Qué hizo la autora
 
-Esta es la parte más importante de la declaración y **solo ella puede completarla**. Lo siguiente es lo que se le indicó a Claude Code que declarara; la autora debe confirmar cada punto:
+Datos aportados por la autora el 19/09/2026:
 
-| Afirmación | ¿Confirmada por la autora? |
+| Qué | Detalle |
 |---|---|
-| Decidió el alcance del proyecto y qué fases se hacían | **[COMPLETAR: sí / no / matiz]** |
-| Revisó el resultado de **cada fase** antes de aprobar la siguiente | **[COMPLETAR]** |
-| **Ejecutó** las pruebas y demos por su cuenta (`make test-concurrency`, `make demo-race`, `make deadlock-demo`, `make load`, etc.) y verificó los resultados | **[COMPLETAR]** |
-| **Subió los cambios** al repositorio (`git push`); Claude Code tiene prohibido hacerlo por regla del proyecto (`CLAUDE.md`) | **[COMPLETAR]** |
-| Puede explicar oralmente el algoritmo de la transferencia, el orden de bloqueo y el patrón outbox | **[COMPLETAR]** |
+| **Alcance y restricciones** | Los definió ella. En particular, **eligió Python/FastAPI y PostgreSQL en lugar de Firebase**. |
+| **Revisión** | Revisó el resultado de **cada fase** (con ayuda del chat, ver 3.1). |
+| **Pruebas manuales** | Probó la API **a mano desde Swagger** (`/docs`). |
+| **Pruebas automáticas** | Ejecutó ella misma las **pruebas unitarias (12/12)** y de **integración (2/2)** el **19/09/2026**. |
+| **Código** | **No escribió ni modificó código ni documentación a mano.** Todo lo escribió Claude Code. |
+| **Subida al repositorio (`git push`)** | El **primer push lo hizo ella**, con token. Las **fases 2 a 4 las subió Claude Code**. **Desde la fase 5 todos los push los hizo ella.** La regla que prohíbe a Claude Code hacer push (`CLAUDE.md`) se añadió después de la Fase 5 (commit `8836b32`). |
+| **Código que leyó con explicación guiada** | `transfer_service.py`, `account_repository.py` y `demo_race_condition.py`. No declaró haber leído otras partes con explicación guiada. |
 
-**[COMPLETAR: en sus propias palabras, qué partes del código leyó línea por línea, cuáles modificó ella misma, y qué escribió o decidió sin ayuda de la IA (p. ej. elección del alcance, prioridades, qué demos mostrar en el video). Ejemplo del nivel de detalle esperado: "Modifiqué X porque Y".]**
+**Conceptos que la autora declara dominar:** bloqueo pesimista con orden fijo y prevención de deadlocks · idempotencia · patrón outbox · condición de carrera (demo inseguro vs. seguro) · circuit breaker · sincronización por lotes con Bancs · detección y respuesta al incidente de pool agotado.
+
+**Conceptos que la autora declara que aún NO domina en detalle:** OpenTelemetry y trazas · reglas de alertas de Prometheus · detalles internos del ETL · configuración de la prueba de carga con Locust.
+
+**Las demás demos y pruebas** (`make demo-race`, `make deadlock-demo`, `make load`, etc.) **no figuran entre las que la autora declaró haber ejecutado**: la última prueba de carga (Fase 8) la ejecutó Claude Code.
 
 ---
 
@@ -101,15 +108,21 @@ Lo que **está verificado en el repositorio** (y cualquiera puede repetirlo):
 5. Un script de carga se quedaba girando 20 minutos por `set -e` + `pipefail` con Locust (comentario en `scripts/load_test.sh`).
 
 **Limitaciones de esta validación (dicho con honestidad):**
-- Las salidas de las pruebas unitarias y de integración **no están guardadas** en `evidence/` (solo la de concurrencia); deben regenerarse con `make test`.
+- Las pruebas unitarias y de integración las ejecutó la autora el 19/09/2026 y sus salidas están guardadas en `evidence/test-data/test_unit_output.txt` y `test_integration_output.txt` (commit `7b36ab4`).
 - La prueba de carga se ejecutó con el código final (tres corridas en total; el TPS sostenido varió 47 → 41,8 → 36,8), así que hay ruido de medición.
-- **[COMPLETAR: si la autora encontró otros errores, o detectó afirmaciones de la IA que no eran ciertas y las corrigió, listarlos aquí.]**
+- **[COMPLETAR: si la autora encontró ella misma otros errores, o afirmaciones de la IA que no eran ciertas, listarlos aquí; no aportó ninguno.]** Los cinco errores de arriba los encontró la propia IA al ejecutar las pruebas, no la autora, hasta donde consta.
 
 ---
 
 ## 6. Qué NO se hizo con IA / qué no se delegó
 
-**[COMPLETAR por la autora.]** Ejemplos de lo que suele ir aquí: decisiones de prioridad y alcance, la grabación del video, la defensa oral, la verificación final en su propia máquina, la subida al repositorio.
+Según lo que declaró la autora:
+
+- **Las decisiones de alcance y de tecnología** (Python/FastAPI y PostgreSQL en lugar de Firebase) las tomó ella.
+- **La revisión de cada fase, las pruebas manuales en Swagger y la ejecución de las pruebas unitarias y de integración** las hizo ella.
+- **La subida al repositorio** la hizo ella (salvo las fases 2 a 4, que subió Claude Code).
+
+Lo que **sí se delegó por completo en la IA:** escribir todo el código, las pruebas, los scripts y la documentación. La autora **no escribió ni modificó nada a mano**.
 
 ---
 
@@ -120,8 +133,8 @@ Lo que **está verificado en el repositorio** (y cualquiera puede repetirlo):
 | Código correcto "en apariencia" pero con fallos de concurrencia | Pruebas empíricas de concurrencia y demo contra la versión insegura; deadlocks contados en PostgreSQL, no en el script |
 | Que la autora no entienda lo entregado | Comentarios en español que explican el **porqué**; ADR por cada decisión; documento técnico con la defensa; una fase por vez con revisión |
 | Cifras inventadas o infladas | Toda cifra de la documentación sale de un archivo de `evidence/`; las proyecciones están rotuladas; hay una sección de limitaciones |
-| Que la IA haga cambios irreversibles | Regla del proyecto (`CLAUDE.md`): **Claude Code nunca hace `git push`** y sus commits **no llevan atribución ni `Co-Authored-By`** (el commit lo hace la autora o se hace sin trailers) |
-| Alucinaciones en la documentación | Revisión de la autora **[COMPLETAR: confirmar que revisó los documentos de la Fase 8 contra el código]** |
+| Que la IA haga cambios irreversibles | Desde después de la Fase 5 hay una regla en `CLAUDE.md` (commit `8836b32`): **Claude Code nunca hace `git push`**; la autora sube los cambios. (Antes de esa regla, las fases 2 a 4 las subió Claude Code.) |
+| Alucinaciones en la documentación | La autora revisó el resultado de cada fase; **[COMPLETAR: confirmar si revisó específicamente los documentos de la Fase 8 contra el código; no lo indicó]** |
 
 > **Nota de transparencia sobre los commits.** Por instrucción de la autora (`CLAUDE.md`), los commits del proyecto **no incluyen** líneas `Co-Authored-By` ni atribución a Claude. Esa decisión es de estilo del repositorio y **no oculta** el uso de IA: este archivo existe justamente para declararlo.
 
@@ -129,7 +142,7 @@ Lo que **está verificado en el repositorio** (y cualquiera puede repetirlo):
 
 ## 8. Declaración final
 
-Declaro que el uso de herramientas de IA en este proyecto es el descrito arriba, que revisé el resultado y que puedo explicar y defender el diseño y el código entregados.
+Declaro que el uso de herramientas de IA en este proyecto es el descrito arriba, que no escribí ni modifiqué código ni documentación a mano, que revisé el resultado de cada fase y que puedo explicar y defender los conceptos que declaro dominar en la sección 4.
 
-**Firma:** **[COMPLETAR: nombre y firma de la autora]**
-**Fecha:** **[COMPLETAR]**
+**Firma:** Cielo Morillo
+**Fecha:** 19 de septiembre de 2026
