@@ -18,9 +18,9 @@ Las cifras vienen de archivos reales en `evidence/`; cuando algo es una proyecci
 2. **Patrón Outbox.** Cada transferencia guarda, en la *misma* transacción de base de datos, el cambio de saldos, el asiento contable y dos eventos pendientes (uno para Bancs, otro para la IA). Un worker separado los entrega después. Así no hay transacciones distribuidas y nada externo puede frenar una transferencia.
 3. **Bancs y la IA nunca están en el camino crítico.** Bancs recibe cambios de saldo **en lotes de 100** (1.000 cambios: 4,1 s en 10 peticiones frente a 37,7 s en 1.000). La IA responde en 300-800 ms, así que llamarla en línea sumaría eso a cada transferencia; con la IA apagada o colgada la latencia **no empeora** (p95 570-613 ms frente a 638 ms con IA encendida).
 
-**Lo que se demostró.** 4/4 pruebas de concurrencia (100 transferencias simultáneas sobre 1.000,00: exactamente 20 triunfan, saldo 0,00); una implementación insegura de control produjo 4.551,00 de dinero fantasma en 200 transferencias, la segura 0,00. Prueba de carga real: **≈ 47 transferencias/s** sostenidas con p95 < 2 s en **un solo proceso** de la API. El incidente de quincena (pool de conexiones agotado) se reprodujo, se detectó en 1 s y se diagnosticó con endpoints propios.
+**Lo que se demostró.** 4/4 pruebas de concurrencia (100 transferencias simultáneas sobre 1.000,00: exactamente 20 triunfan, saldo 0,00); una implementación insegura de control produjo 4.551,00 de dinero fantasma en 200 transferencias, la segura 0,00. Prueba de carga real: **≈ 37 transferencias/s** (37-47 según la corrida) sostenidas con p95 < 2 s en **un solo proceso** de la API, con el dinero conservado, el ledger cuadrado y 0 deadlocks bajo carga. El incidente de quincena (pool de conexiones agotado) se reprodujo, se detectó en 1 s y se diagnosticó con endpoints propios.
 
-**Lo que NO se demostró.** Los 10.000 TPS. Con un proceso el cuello de botella es la CPU de la API (78 % de media, pico 134 %) y no PostgreSQL (26 %). La ruta a 10.000 TPS es escalar la API horizontalmente, poner un pooler delante de PostgreSQL y luego particionar por `account_id`; es una **proyección con aritmética** (sección 10), no una medición.
+**Lo que NO se demostró.** Los 10.000 TPS. Con un proceso el cuello de botella es la CPU de la API (70 % de media, picos de 97-134 %) y no PostgreSQL (~30 %). La ruta a 10.000 TPS es escalar la API horizontalmente, poner un pooler delante de PostgreSQL y luego particionar por `account_id`; es una **proyección con aritmética** (sección 10), no una medición.
 
 ---
 
@@ -457,7 +457,7 @@ Lo que ve el operador de un deadlock real: `SQLSTATE 40P01`, un ciclo de 4 proce
 
 ### 8.4 Prueba de carga: el pico de quincena (`make load`)
 
-Rampa de 10 a 300 usuarios sobre 5.000 cuentas, mezcla 70/20/10 (`evidence/load-test-results/`). Resultados completos en el README (§6.6): **≈ 47 transferencias/s sostenidas cumpliendo el SLO** (p95 1.576 ms, 0 % de errores con 50 usuarios). Al superar ese punto el sistema se degrada, no escala: con 100 usuarios ya hay 1,6 % de error y con 300 usuarios 46 %. Es el comportamiento del incidente descrito en el enunciado, ahora con datos.
+Rampa de 10 a 300 usuarios sobre 5.000 cuentas, mezcla 70/20/10 (`evidence/load-test-results/`). Resultados completos en el README (§6.6): **≈ 37 transferencias/s sostenidas cumpliendo el SLO** (p95 1.853 ms, 0 % de errores con 50 usuarios; 47 y 41,8 en corridas anteriores). Al superar ese punto el sistema se degrada, no escala: con 75 usuarios el p95 ya pasa de 2 s, con 150 hay 8 % de error y con 300 usuarios 76 %. Además el dinero se conservó (5.000.000.000,00 antes y después), el ledger cuadró y no hubo deadlocks (`verification.txt`). Es el comportamiento del incidente descrito en el enunciado, ahora con datos.
 
 ---
 
@@ -478,39 +478,39 @@ Con **un** proceso de API, un PostgreSQL y una máquina de desarrollo (`evidence
 
 | Dato | Valor |
 |---|---|
-| TPS máximo sostenido cumpliendo el SLO (p95 < 2 s, < 1 % errores) | **47 transferencias/s** (68 peticiones/s con la mezcla 70/20/10) |
-| CPU de `transaction-api` durante la carga | **media 78 %, pico 134 %** (100 % = un núcleo) |
-| CPU de `postgres` | **media 26 %, pico 61 %** |
-| CPU del `outbox-worker` | media 28 %, pico 43 % |
+| TPS máximo sostenido cumpliendo el SLO (p95 < 2 s, < 1 % errores) | **36,8 transferencias/s** (52 peticiones/s con la mezcla 70/20/10); corridas anteriores: 47 y 41,8 |
+| CPU de `transaction-api` durante la carga | **media 70 %, pico 111 %** (100 % = un núcleo) |
+| CPU de `postgres` | **media 31 %, pico 79 %** |
+| CPU del `outbox-worker` | media 38 %, pico 76 % |
 | Pool de conexiones | 28-29 de 30 en uso a partir de 50 usuarios; la cola de espera crece con la carga |
 
-**Diagnóstico:** el cuello de botella es la **CPU de la API** (un proceso Python en un núcleo: validación, JSON, ciclo async y espera de red), **no** PostgreSQL, que tiene margen (26 % de un núcleo). Más allá del punto óptimo el rendimiento *cae* (47 → 27 TPS con 300 usuarios) porque la cola del pool y los reintentos consumen la CPU que sobra: es lo típico de un sistema saturado.
+**Diagnóstico:** el cuello de botella es la **CPU de la API** (un proceso Python en un núcleo: validación, JSON, ciclo async y espera de red), **no** PostgreSQL, que tiene margen (~31 % de un núcleo). Más allá del punto óptimo el rendimiento *cae* (37 → 3 TPS con 300 usuarios en la última corrida) porque la cola del pool y los reintentos consumen la CPU que sobra: es lo típico de un sistema saturado.
 
 ### 10.2 La aritmética (proyección lineal, con sus supuestos)
 
-**Paso 1 — Escalar la API.** Un proceso da ~47 TPS a p95 < 2 s.
+**Paso 1 — Escalar la API.** Un proceso da ~37 TPS a p95 < 2 s (la última corrida; las anteriores dieron 41,8 y 47: la variación es de ~25 %, así que hay que leer "37-47"). Se usa el valor **más bajo** para no prometer de más.
 
 | Cuenta | Resultado |
 |---|---|
-| 10.000 TPS ÷ 47 TPS por proceso | **≈ 213 procesos** de API |
-| Con un margen de seguridad del 30 % (no operar al límite) | ≈ 213 ÷ 0,7 ≈ **~300 procesos** |
-| Con 4 procesos por contenedor (uno por núcleo) → | **~75 contenedores / réplicas** |
+| 10.000 TPS ÷ 36,8 TPS por proceso | **≈ 272 procesos** de API (con 47 TPS serían ≈ 213) |
+| Con un margen de seguridad del 30 % (no operar al límite) | ≈ 272 ÷ 0,7 ≈ **~390 procesos** |
+| Con 4 procesos por contenedor (uno por núcleo) → | **~100 contenedores / réplicas** |
 
-Como cada proceso es una unidad sin estado (no comparten memoria), esta parte escala casi linealmente: añadir procesos (`uvicorn --workers N` o `gunicorn -k uvicorn.workers.UvicornWorker`) y réplicas detrás de un balanceador. Una máquina de 16 núcleos ya da ~16 × 47 ≈ 750 TPS.
+Como cada proceso es una unidad sin estado (no comparten memoria), esta parte escala casi linealmente: añadir procesos (`uvicorn --workers N` o `gunicorn -k uvicorn.workers.UvicornWorker`) y réplicas detrás de un balanceador. Una máquina de 16 núcleos ya da ~16 × 37 ≈ 590 TPS.
 
-**Paso 2 — Cuidar las conexiones a PostgreSQL.** 300 procesos × pool de 30 = **9.000 conexiones**, y PostgreSQL rinde mal con más de unos cientos. Solución: **PgBouncer** (pooler en modo transacción) delante, con un pool total pequeño (p. ej. 200-400 conexiones reales). Regla del proyecto: `réplicas × pool_size ≤ max_connections`. Además conviene **bajar** el pool por proceso: 28-29 conexiones ocupadas de 30 con 50 usuarios era, en gran parte, gente *esperando bloqueos y red*.
+**Paso 2 — Cuidar las conexiones a PostgreSQL.** 390 procesos × pool de 30 = **~12.000 conexiones**, y PostgreSQL rinde mal con más de unos cientos. Solución: **PgBouncer** (pooler en modo transacción) delante, con un pool total pequeño (p. ej. 200-400 conexiones reales). Regla del proyecto: `réplicas × pool_size ≤ max_connections`. Además conviene **bajar** el pool por proceso: 28-29 conexiones ocupadas de 30 con 50 usuarios era, en gran parte, gente *esperando bloqueos y red*.
 
-**Paso 3 — Ahora PostgreSQL es el límite.** Si a 47 TPS se usa un 26 % de núcleo, la extrapolación lineal es:
+**Paso 3 — Ahora PostgreSQL es el límite.** Si a 36,8 TPS se usa un ~31 % de núcleo, la extrapolación lineal es:
 
 | Cuenta | Resultado |
 |---|---|
-| 0,26 núcleos ÷ 47 TPS ≈ 5,6 ms de CPU de BD por transferencia (incluye lecturas de la mezcla y el worker) | ≈ 5,6 ms |
-| 10.000 TPS × 5,6 ms | **≈ 56 núcleos** de CPU de base de datos |
+| 0,305 núcleos ÷ 36,8 TPS ≈ 8,3 ms de CPU de BD por transferencia (incluye lecturas de la mezcla y el worker) | ≈ 8,3 ms |
+| 10.000 TPS × 8,3 ms | **≈ 83 núcleos** de CPU de base de datos |
 
 Un solo PostgreSQL de escritura no llega a eso de forma cómoda (además del CPU, están el WAL, la E/S y los bloqueos). Es el punto en que la arquitectura debe cambiar.
 
 **Paso 4 — Particionar por `account_id` (sharding).** Las transferencias son operaciones sobre cuentas; repartir las cuentas en *N* particiones (por `account_id`, con hash o rangos) reparte la escritura:
-- Con 8 particiones → ≈ 1.250 TPS y ≈ 7 núcleos de BD por partición: viable en un servidor mediano.
+- Con 8 particiones → ≈ 1.250 TPS y ≈ 10 núcleos de BD por partición (1.250 × 8,3 ms): viable en un servidor mediano.
 - Cada partición mantiene su propio orden de bloqueo y su propio outbox; el worker escala con `SKIP LOCKED` (varias réplicas sin pisarse).
 - **Las transferencias entre cuentas de particiones distintas** ya no caben en una sola transacción local. Requieren un patrón de **saga** (débito con reserva → crédito → confirmación/compensación) o enrutar el orden de bloqueo entre particiones. Es el punto más difícil y **no está implementado ni medido** aquí.
 
@@ -524,8 +524,8 @@ Un solo PostgreSQL de escritura no llega a eso de forma cómoda (además del CPU
 
 | Etapa | Cambio | TPS estimado | Estado |
 |---|---|---|---|
-| 0 | 1 proceso, 1 PostgreSQL (medido) | **~47** | ✅ medido |
-| 1 | Varios procesos por contenedor y réplicas de la API (por núcleo) | ~750 por máquina de 16 núcleos | proyección |
+| 0 | 1 proceso, 1 PostgreSQL (medido) | **~37** (37-47) | ✅ medido |
+| 1 | Varios procesos por contenedor y réplicas de la API (por núcleo) | ~590 por máquina de 16 núcleos | proyección |
 | 2 | Muchas réplicas + **PgBouncer** | hasta lo que aguante 1 PostgreSQL (unos cientos a pocos miles, a validar) | proyección |
 | 3 | Réplica de lectura + coalescencia y lotes mayores hacia Bancs | igual, aliviando lecturas y a Bancs | proyección |
 | 4 | **Particionar por `account_id`** (8+ particiones) + saga entre particiones | ~10.000 (8 × ~1.250) | proyección |
@@ -539,19 +539,19 @@ Un solo PostgreSQL de escritura no llega a eso de forma cómoda (además del CPU
 Esta sección existe para protegerte en el Q&A: es mejor decirlo tú antes de que lo pregunten.
 
 ### 11.1 Sobre las mediciones
-1. **No se probaron 10.000 TPS.** Se midieron 47. Todo lo demás (sección 10) es proyección.
+1. **No se probaron 10.000 TPS.** Se midieron ~37 (37-47 en tres corridas). Todo lo demás (sección 10) es proyección.
 2. **Se midió en un portátil con Docker Desktop** (3,8 GB), con el generador de carga (Locust) y todos los servicios en la misma máquina: compiten por CPU. Las cifras absolutas no son de producción.
 3. **La API corre como un solo proceso** por contenedor. No se midió el efecto de varios procesos ni de varias réplicas.
-4. **La CPU de la API superó el 100 %** (pico 134 %) con un solo proceso, algo que un proceso de un solo hilo lógico no debería hacer; probablemente Docker suma hilos auxiliares (resolución DNS, E/S) y no se investigó a fondo. La media (78 %) es la cifra más fiable, y los porcentajes de Docker en Windows son aproximados.
+4. **La CPU de la API tiene media de ~70 % y picos de 97-134 %** según la corrida. Que un proceso pase de 100 % probablemente se deba a hilos auxiliares (DNS, E/S) que Docker suma; no se investigó a fondo. Los porcentajes de Docker en Windows son aproximados. **Entre tres corridas el TPS sostenido varió 47 → 41,8 → 36,8 (~25 %)**: hay ruido de medición importante (máquina compartida con el generador de carga), y no se hicieron más repeticiones para acotarlo.
 5. **Las rampas son de 19 s medidos por escalón.** Sirven para ver la tendencia, no para caracterizar estados estables largos (no hay prueba de resistencia de horas).
-6. **En el archivo de la corrida de carga guardado** (`locust_console.txt`) aparecen respuestas HTTP **500** en lecturas (`GET /accounts/...`) durante la saturación. El commit posterior de la Fase 7 hizo que las lecturas devuelvan `503 POOL_TIMEOUT` en su lugar, pero **la carga guardada no se repitió después de ese cambio**: hay que volver a ejecutar `make load` para regenerar la evidencia.
-7. **La verificación "no se perdió dinero bajo carga"** que imprime `scripts/load_test.sh` (`verification.txt`) **no está guardada en `evidence/`**. La conservación del dinero está probada por las pruebas de concurrencia (sección 4.7), no por un archivo de la prueba de carga.
+6. **Resuelto (lecturas con HTTP 500 en saturación):** la prueba de carga se repitió el 2026-09-19 con el código final y todos los errores, también los de lectura, son `503 POOL_TIMEOUT` (`locust_console.txt`).
+7. **Resuelto (faltaba `verification.txt`):** `scripts/load_test.sh` se corrigió (ya no usa `set -e`, así que la verificación se escribe aunque Locust termine con error) y `evidence/load-test-results/verification.txt` está guardado: dinero conservado, ledger cuadrado, 0 deadlocks. Se guardó la corrida más reciente; hay tres corridas con este código o casi idéntico y resultados distintos (ver punto 4).
 8. **Solo se guardó la salida de las pruebas de concurrencia** (`test_concurrency_output.txt`). Las salidas de las unitarias (12 casos) y de integración (2) deben regenerarse con `make test`.
 
 ### 11.2 Sobre el diseño
 9. **Bancs e IA son simulados.** Las latencias (200-500 ms, 300-800 ms) y el umbral de 10 peticiones simultáneas son supuestos, no datos de un sistema real. La IA es un motor de **reglas**, no un modelo entrenado.
 10. **Consistencia eventual con Bancs.** El saldo local y el de Bancs pueden diferir unos segundos; es una decisión consciente (ADR 0004/0008), y la conciliación la vigila. Si Bancs estuviera caído mucho tiempo, el atraso crece y tras 5 fallos por evento pasan a `DEAD` (revisión manual).
-11. **El ADR 0008 afirma que a 10.000 TPS Bancs vería "~100 peticiones/s de lotes"**, pero el mock solo sostiene unas ~25-50 peticiones/s (10 simultáneas × 200-500 ms). Hace falta coalescer por cuenta o subir el tamaño del lote (sección 10.2, paso 5). Corrección pendiente en el ADR.
+11. **El ADR 0008 afirma que a 10.000 TPS Bancs vería "~100 peticiones/s de lotes"**, pero el mock solo sostiene unas ~25-50 peticiones/s (10 simultáneas × 200-500 ms). Hace falta coalescer por cuenta o subir el tamaño del lote (sección 10.2, paso 5). El ADR 0008 ya está corregido (nota de corrección en su punto 2); la coalescencia y los lotes mayores siguen sin implementarse.
 12. **Transferencias entre particiones** (sharding) no están diseñadas al detalle ni implementadas: se necesitaría una saga.
 13. **Una sola instancia de PostgreSQL**, sin réplica, sin *failover* y sin respaldos automáticos (`pg_dump`/PITR) configurados.
 14. **Cuentas calientes:** el rendimiento sobre una misma cuenta está limitado por su bloqueo de fila (~30 TPS medidos).
@@ -568,7 +568,7 @@ Esta sección existe para protegerte en el Q&A: es mejor decirlo tú antes de qu
 
 ### 11.4 Hoja de ruta (en orden de prioridad)
 1. Autenticación en `admin` y TLS.
-2. Repetir `make load` y guardar `verification.txt`; medir con varios procesos/réplicas y PgBouncer.
+2. Medir con varios procesos/réplicas y PgBouncer, y repetir `make load` más veces (idealmente en una máquina sin otras cargas) para acotar la variación entre corridas.
 3. Exportar trazas a un colector, Grafana y Alertmanager.
 4. Corregir el ADR 0008 (capacidad real de Bancs) e implementar la coalescencia por cuenta.
 5. Réplica de PostgreSQL y respaldos.

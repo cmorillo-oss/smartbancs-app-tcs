@@ -21,7 +21,13 @@ Pasado su límite, Bancs no solo se vuelve lento: **rinde menos** (colapso). Con
 2. **El worker sincroniza en lotes de hasta 100 eventos** por petición, cada 2 s o de inmediato si el lote sale lleno
    (tope de 10 lotes por ciclo para no acaparar). Una petición cuesta lo mismo (~200-500 ms) lleve 1 o 100 eventos:
    1000 cambios tardaron **4.1 s en 10 lotes frente a 37.7 s en 1000 peticiones**, y a Bancs le llegan 100 veces
-   menos peticiones. Con 10.000 TPS, Bancs vería como máximo ~100 peticiones/s de lotes, en vez de 10.000.
+   menos peticiones. Con 10.000 TPS, Bancs vería ~100 peticiones/s de lotes en vez de 10.000 (100 veces menos, pero ver la corrección siguiente).
+   > **Corrección (Fase 8):** la versión original de este ADR daba ~100 peticiones/s como "carga baja" para Bancs. Es un error de
+   > cálculo: Bancs tolera ~10 peticiones simultáneas de 200-500 ms, es decir ~25-50 peticiones/s (medido: 24,5 OK/s con 10 simultáneas).
+   > Con lotes de 100 eso son **~2.500-5.000 eventos/s como máximo**, no 10.000. A 10.000 TPS hay que reducir los eventos que se envían:
+   > (a) **coalescer por cuenta** (el evento lleva el saldo *absoluto*, así que por ventana de envío solo importa el último de cada cuenta) y/o
+   > (b) lotes más grandes (p. ej. 400 eventos → 25 peticiones/s). Ninguna de las dos está implementada ni medida; hoy el diseño cubre
+   > con holgura los ~47 TPS medidos (≈1 lote/2 s).
 3. **Lo que se envía es idempotente y tolerante al desorden.** Cada evento lleva el saldo *absoluto* resultante y su
    `sequence` (id del outbox); Bancs solo lo aplica si es mayor que el último aplicado a esa cuenta. Un reenvío
    (at-least-once) o un evento fuera de orden no corrompe el saldo.

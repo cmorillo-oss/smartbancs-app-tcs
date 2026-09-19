@@ -102,7 +102,7 @@ Lo que **está verificado en el repositorio** (y cualquiera puede repetirlo):
 
 **Limitaciones de esta validación (dicho con honestidad):**
 - Las salidas de las pruebas unitarias y de integración **no están guardadas** en `evidence/` (solo la de concurrencia); deben regenerarse con `make test`.
-- La corrida de carga guardada es anterior al cambio 500 → 503 en lecturas; conviene repetirla.
+- La prueba de carga se ejecutó con el código final (tres corridas en total; el TPS sostenido varió 47 → 41,8 → 36,8), así que hay ruido de medición.
 - **[COMPLETAR: si la autora encontró otros errores, o detectó afirmaciones de la IA que no eran ciertas y las corrigió, listarlos aquí.]**
 
 ---

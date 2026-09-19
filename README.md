@@ -233,20 +233,22 @@ Fuente: `evidence/ai-resilience/comparison.txt` (3 rondas × 100 transferencias,
 
 Con la IA apagada o colgada la latencia **no empeora** (incluso baja algo, porque la IA compite por CPU). Con una IA síncrona cada transferencia pagaría entre 300 y 800 ms extra.
 
-### 6.6 Prueba de carga: ~47 TPS sostenidos
+### 6.6 Prueba de carga: ~37 TPS sostenidos (37-47 según la corrida)
 Fuente: `evidence/load-test-results/load_report.txt` (rampa de 10 a 300 usuarios, 5.000 cuentas, mezcla 70 % transferencias / 20 % saldo / 10 % historial; SLO: p95 < 2 s y errores < 1 %).
 
 | Usuarios | Transferencias/s | p95 | Errores | ¿Cumple SLO? |
 |---|---|---|---|---|
-| 10 | 33,7 | 650 ms | 0 % | sí |
-| 25 | 39,3 | 1.150 ms | 0 % | sí |
-| **50** | **47,0** | **1.576 ms** | **0 %** | **sí — máximo sostenido** |
-| 75 | 46,8 | 2.546 ms | 0 % | no |
-| 100 | 34,4 | 4.917 ms | 1,6 % | no |
-| 300 | 27,1 | 8.177 ms | 46 % | no |
+| 10 | 34,9 | 469 ms | 0 % | sí |
+| 25 | 33,6 | 1.206 ms | 0 % | sí |
+| **50** | **36,8** | **1.853 ms** | **0 %** | **sí — máximo sostenido** |
+| 75 | 38,6 | 3.045 ms | 0,1 % | no |
+| 100 | 34,7 | 4.747 ms | 0,3 % | no |
+| 150 | 33,5 | 6.797 ms | 8,0 % | no |
+| 300 | 2,9 | 15.543 ms | 76 % | no |
 
-**TPS máximo sostenido cumpliendo el SLO: ≈ 47 transferencias/s** (68 peticiones/s en total). Más allá, el sistema *se degrada* en lugar de escalar: la cola del pool crece y aparecen 503.
-CPU durante la carga (`docker_stats.csv`, 100 % = un núcleo): **transaction-api media 78 % (pico 134 %)**, postgres media 26 % (pico 61 %). El cuello de botella es la **CPU de la API**, no la base de datos → ver [escalabilidad a 10.000 TPS](docs/DOCUMENTO_TECNICO.md#10-escalabilidad-a-10000-tps).
+**TPS máximo sostenido cumpliendo el SLO: ≈ 37 transferencias/s** (52 peticiones/s en total). Más allá, el sistema *se degrada* en lugar de escalar: la cola del pool crece y aparecen 503 (todos los errores son `503 POOL_TIMEOUT`, también en las lecturas). **Tres corridas dieron 47, 41,8 y 36,8** (la tabla es la última, la que está en `evidence/`): la variación entre corridas es de ~25 %, así que la cifra honesta es **"entre ~37 y ~47 TPS por proceso"**. Con 300 usuarios la última corrida colapsó (76 % de errores).
+**Corrección del dinero bajo carga** (`verification.txt`): las 5.000 cuentas suman **5.000.000.000,00 antes y después** (conservado), el ledger **cuadra** (DEBIT = CREDIT = 596.330,00 en 6.092 transferencias) y hubo **0 deadlocks** en PostgreSQL.
+CPU durante la carga (`docker_stats.csv`, 100 % = un núcleo): **transaction-api media 70 % (pico 111 %)**, postgres media 31 % (pico 79 %), outbox-worker media 38 %. El cuello de botella es la **CPU de la API**, no la base de datos → ver [escalabilidad a 10.000 TPS](docs/DOCUMENTO_TECNICO.md#10-escalabilidad-a-10000-tps).
 
 ### 6.7 Incidente simulado (pool agotado)
 Fuente: `evidence/incident/exhaust_pool.txt`. Una sola sesión que retiene una fila paraliza a las 30 conexiones del pool: hasta 174 peticiones en cola, **100 % de las transferencias fallan con 503**.
@@ -261,7 +263,7 @@ Fuente: `evidence/etl/etl_report.txt`. 4.415 filas leídas → 3.954 limpias + 4
 
 Lista completa y honesta en [`DOCUMENTO_TECNICO.md §11`](docs/DOCUMENTO_TECNICO.md#11-limitaciones-conocidas). Las más importantes:
 
-- **No se demostró 10.000 TPS.** Se midieron ~47 TPS con un proceso; los 10.000 son una **proyección con aritmética**, no una medición.
+- **No se demostró 10.000 TPS.** Se midieron ~37-47 TPS con un proceso; los 10.000 son una **proyección con aritmética**, no una medición.
 - **Bancs e IA son simulados** (mocks); sus latencias y umbrales son supuestos razonables, no datos de un sistema real.
 - **Los endpoints `admin` no tienen autenticación** ni hay TLS: fuera del alcance del reto, obligatorios antes de producción.
 - **Una sola instancia de PostgreSQL**, sin réplica ni respaldo automatizado.

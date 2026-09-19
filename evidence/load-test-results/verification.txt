@@ -1,0 +1,16 @@
+
+VERIFICACIÓN DE CORRECCIÓN BAJO CARGA
+=====================================
+Dinero total en las 5000 cuentas:  antes 5000000000.00  |  después 5000000000.00   ->  CONSERVADO (ni un centavo perdido ni creado)
+Código de salida de Locust: 1 (distinto de 0 es normal: hubo peticiones fallidas al saturar)
+Transferencias registradas en la carga: 6092
+Libro mayor: suma DEBIT = 596330.00  |  suma CREDIT = 596330.00   ->  CUADRA
+Deadlocks de PostgreSQL durante la carga: 0
+
+USO DE CPU DURANTE LA CARGA (100% = un núcleo completo) — pico y media de cada contenedor:
+  transaction-api  pico  111.1%   media   70.4%
+  postgres         pico   78.7%   media   30.5%
+  outbox-worker    pico   76.3%   media   38.0%
+  ai-service       pico   57.6%   media   18.8%
+  bancs-mock       pico   51.8%   media   12.9%
+  prometheus       pico    4.2%   media    0.4%

@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 # Prueba de carga completa: prepara 5000 cuentas, mide CPU de los contenedores, ejecuta Locust y VERIFICA
 # que bajo carga no se perdió ni se creó dinero. Uso: bash scripts/load_test.sh   (o: make load)
-set -euo pipefail
+# SIN `-e` a propósito: la prueba sube hasta SATURAR, así que Locust termina con código != 0 y algún comando de
+# consulta puede fallar cuando el sistema está al límite. Con `-e` el script moría ANTES de la verificación de
+# dinero (que es lo más importante) y no quedaba `verification.txt`. Ahora cada paso es tolerante, se registra
+# el código de salida de Locust y la verificación se escribe SIEMPRE.
+set -uo pipefail
+# En Git Bash de Windows, las rutas que empiezan por / (p. ej. /evidence/...) se "traducen" a C:/Program Files/Git/...
+# y Locust escribía su informe en una carpeta basura dentro de tests/. Esto desactiva esa conversión.
+export MSYS_NO_PATHCONV=1
 cd "$(dirname "$0")/.."
 OUT=evidence/load-test-results
 mkdir -p "$OUT"
 PSQL="docker compose exec -T postgres psql -U smartbancs -d smartbancs -tA"
 
-docker compose up -d --build >/dev/null
+docker compose up -d --build >/dev/null || { echo "ERROR: no se pudo levantar docker compose (¿Docker Desktop está corriendo?)"; exit 1; }
 for _ in $(seq 1 40); do curl -sf localhost:8000/ready >/dev/null && break; sleep 2; done
 
 # Sistema en reposo antes de medir: el backlog de eventos (IA/Bancs) de pruebas anteriores compite por la BD.
@@ -34,10 +41,10 @@ trap 'kill $SAMPLER 2>/dev/null || true' EXIT
 echo "Ejecutando la rampa de carga (8 escalones x 25 s = ~3.5 min)..."
 docker compose --profile test run --rm -T tests locust -f load/locustfile.py --headless --host http://transaction-api:8000 \
   --csv /evidence/load-test-results/locust --html /evidence/load-test-results/locust_report.html --only-summary 2>&1 \
-  | grep -v "^ Container\|^#" | tee "$OUT/locust_console.txt" | sed -n '/PRUEBA DE CARGA/,$p' || true
-# `|| true`: Locust termina con código != 0 cuando hubo peticiones fallidas, y en una prueba que sube hasta
-# SATURAR eso es lo ESPERADO. Sin esto `pipefail` abortaba el script aquí y la verificación nunca se ejecutaba
-# (error real que dejó un proceso de espera girando más de 20 minutos).
+  | grep -v "^ Container\|^#" | tee "$OUT/locust_console.txt" | sed -n '/PRUEBA DE CARGA/,$p'
+LOCUST_RC=${PIPESTATUS[0]}   # código de Locust (distinto de 0 = hubo peticiones fallidas: ESPERADO al saturar)
+# Locust termina con código != 0 cuando hubo peticiones fallidas; al SATURAR es lo esperado. Por eso el script no usa `-e`
+# y este código solo se registra (en verification.txt); no aborta nada.
 kill $SAMPLER 2>/dev/null || true
 
 sleep 3
@@ -52,10 +59,11 @@ CREDIT=$($PSQL -c "select coalesce(sum(amount),0) from ledger_entries where entr
   echo "VERIFICACIÓN DE CORRECCIÓN BAJO CARGA"
   echo "====================================="
   echo "Dinero total en las 5000 cuentas:  antes $BEFORE  |  después $AFTER   ->  $([ "$BEFORE" = "$AFTER" ] && echo 'CONSERVADO (ni un centavo perdido ni creado)' || echo 'DESCUADRADO')"
+  echo "Código de salida de Locust: ${LOCUST_RC:-?} (distinto de 0 es normal: hubo peticiones fallidas al saturar)"
   echo "Transferencias registradas en la carga: $((TX_AFTER - TX_BEFORE))"
   echo "Libro mayor: suma DEBIT = $DEBIT  |  suma CREDIT = $CREDIT   ->  $([ "$DEBIT" = "$CREDIT" ] && echo 'CUADRA' || echo 'DESCUADRADO')"
   echo "Deadlocks de PostgreSQL durante la carga: $((DL_AFTER - DL_BEFORE))"
   echo
   echo "USO DE CPU DURANTE LA CARGA (100% = un núcleo completo) — pico y media de cada contenedor:"
-  python scripts/cpu_summary.py "$OUT/docker_stats.csv"
+  (python scripts/cpu_summary.py "$OUT/docker_stats.csv" || python3 scripts/cpu_summary.py "$OUT/docker_stats.csv" || echo "  (no se pudo resumir la CPU: ver docker_stats.csv)")
 } | tee "$OUT/verification.txt"

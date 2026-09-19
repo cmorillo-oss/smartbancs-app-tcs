@@ -7,7 +7,7 @@ Este documento analiza **dos incidentes**:
 
 El formato es *blameless*: se analiza el sistema, no a las personas. Es un post mortem de un **ejercicio** (no hubo clientes reales); lo que sí es real son las mediciones.
 
-> **Cómo leer las marcas.** Los campos con **[COMPLETAR]** son datos que el repo no puede saber (horas exactas, nombres de responsables, fechas comprometidas). Las cifras sin marca salen de `evidence/` y del historial de git.
+> **Sobre este documento.** Es un post mortem de un **ejercicio**: el proyecto es individual, no hay equipo ni clientes reales, y por eso todas las acciones tienen como responsable a la "Autora (proyecto individual)" y **no tienen fecha comprometida** (las columnas de fecha solo indican cuándo se hizo lo ya hecho). Las fechas y horas salen del historial de git y de las marcas de tiempo de los archivos de `evidence/`; zona horaria UTC-5. Las cifras salen de `evidence/`. Lo marcado con **[CONFIRMAR]** es mi reconstrucción y la autora debe validarlo.
 
 ---
 
@@ -56,7 +56,16 @@ Durante un pico transaccional simulado, las transferencias dejaron de completars
 | 2,1 s | Terminó la demo: 1 completada, 29 abortadas. |
 | – | Misma carga con orden por `account_id`: 30 completadas, 0 deadlocks en 1,78 s. |
 
-**[COMPLETAR]** Si el jurado pide horas de reloj, agregar aquí la fecha y hora reales de la corrida (`evidence/incident/postgres_log_deadlock.txt` registra `2026-09-19 02:58:08 UTC`).
+**Fechas y horas reales (2026-09-18, UTC-5, del historial de git y de los archivos de evidencia):**
+
+| Qué | Cuándo |
+|---|---|
+| Demo de deadlocks (el log de PostgreSQL registra `2026-09-19 02:58:08 UTC`) | **21:58:08** (resultado guardado a las 21:59) |
+| Ensayo de pool agotado cuyo resultado se guardó | terminó a las **22:35:10** |
+| Prueba de carga | primera corrida a las **22:41** del 2026-09-18; repetida el 2026-09-19 (dos veces, la última es la guardada en `evidence/`) con el código final y la verificación de dinero |
+| Commit que reúne todo (`916a8ff`, Fase 7) | **23:05:18** |
+
+Los tiempos de la línea de tiempo (0 s, 1,0 s, ...) son segundos desde el inicio de cada ensayo, medidos por el propio script.
 
 ## 4. Causa raíz — los 5 porqués
 
@@ -115,7 +124,7 @@ Para los deadlocks la resolución es de diseño (orden determinista); el reinten
 - Prometheus **no recarga las reglas** al recrear su contenedor: la demo corrió con la regla vieja hasta darnos cuenta.
 - El cliente de pruebas se saturaba a sí mismo (usaba el mismo cliente para generar carga y para muestrear); hubo que separarlos.
 - Las lecturas (`GET`) devolvían **500** en lugar de 503 ante `POOL_TIMEOUT` (corregido en la Fase 7).
-- La tasa de error subió a 46 % con 300 usuarios: el sistema **se degrada** en vez de rechazar limpiamente el exceso (no hay control de admisión).
+- La tasa de error subió a 43-76 % con 300 usuarios (segunda y tercera corrida de carga): el sistema **se degrada** en vez de rechazar limpiamente el exceso (no hay control de admisión).
 
 ## 9. Dónde tuvimos suerte
 
@@ -131,28 +140,28 @@ Responsable y fecha son **propuestas**: la autora debe confirmarlos o cambiarlos
 
 | # | Acción | Responsable | Fecha objetivo | Estado |
 |---|---|---|---|---|
-| I-1 | **Alertmanager** (o equivalente) para que las alertas lleguen a una persona (correo/chat/paginador) | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-2 | `idle_in_transaction_session_timeout` (p. ej. 10-30 s) y `statement_timeout` en PostgreSQL: mata solo a las sesiones que retienen bloqueos sin trabajar | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-3 | **PgBouncer** delante de PostgreSQL y separar pools por tipo de carga (transferencias / lecturas / admin) para que una causa no paralice todo | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-4 | Dashboards de Grafana con las señales RED + pool + outbox, y exportar trazas a un colector OpenTelemetry | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-5 | `postgres_exporter` para ver deadlocks y bloqueos de **cualquier** cliente | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-6 | Réplica de PostgreSQL y respaldos con recuperación a un punto en el tiempo | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-7 | Prueba de carga periódica (antes de cada quincena) con `make load`; guardar `verification.txt` | [COMPLETAR] | [COMPLETAR] | Pendiente |
+| I-1 | **Alertmanager** (o equivalente) para que las alertas lleguen a una persona (correo/chat/paginador) | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-2 | `idle_in_transaction_session_timeout` (p. ej. 10-30 s) y `statement_timeout` en PostgreSQL: mata solo a las sesiones que retienen bloqueos sin trabajar | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-3 | **PgBouncer** delante de PostgreSQL y separar pools por tipo de carga (transferencias / lecturas / admin) para que una causa no paralice todo | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-4 | Dashboards de Grafana con las señales RED + pool + outbox, y exportar trazas a un colector OpenTelemetry | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-5 | `postgres_exporter` para ver deadlocks y bloqueos de **cualquier** cliente | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-6 | Réplica de PostgreSQL y respaldos con recuperación a un punto en el tiempo | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-7 | Prueba de carga periódica (antes de cada quincena) con `make load`; guardar `verification.txt` | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
 
 ### 10.2 De código
 
 | # | Acción | Responsable | Fecha objetivo | Estado |
 |---|---|---|---|---|
-| C-1 | Orden determinista de bloqueo (`ORDER BY id FOR UPDATE`) | Autora | 2026-09-18 | ✅ Hecho (ADR 0003) |
-| C-2 | `lock_timeout` de 3 s y `pool_timeout` de 5 s (fallar rápido) | Autora | 2026-09-18 | ✅ Hecho |
-| C-3 | Reintento ante deadlock con backoff exponencial + jitter (3 intentos) | Autora | 2026-09-18 | ✅ Hecho |
-| C-4 | `/ready` con plazo de 1 s que detecta el pool agotado | Autora | 2026-09-18 | ✅ Hecho |
-| C-5 | Pool propio y `statement_timeout` para los endpoints de diagnóstico | Autora | 2026-09-18 | ✅ Hecho |
-| C-6 | Alertas con prueba unitaria (`promtool test rules`) | Autora | 2026-09-18 | ✅ Hecho |
-| C-7 | **Control de admisión / *load shedding*:** rechazar rápido con 429/503 cuando `waiting` supere un umbral, en lugar de dejar que la cola crezca | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| C-8 | **Test automático del orden de bloqueo** que falle si alguien vuelve a bloquear en orden distinto (la invariante deja de ser implícita) | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| C-9 | Autenticación en los endpoints `admin` | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| C-10 | Repetir `make load` tras el cambio de 500 → 503 en lecturas y guardar la evidencia | [COMPLETAR] | [COMPLETAR] | Pendiente |
+| C-1 | Orden determinista de bloqueo (`ORDER BY id FOR UPDATE`) | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho (ADR 0003) |
+| C-2 | `lock_timeout` de 3 s y `pool_timeout` de 5 s (fallar rápido) | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho |
+| C-3 | Reintento ante deadlock con backoff exponencial + jitter (3 intentos) | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho |
+| C-4 | `/ready` con plazo de 1 s que detecta el pool agotado | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho |
+| C-5 | Pool propio y `statement_timeout` para los endpoints de diagnóstico | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho |
+| C-6 | Alertas con prueba unitaria (`promtool test rules`) | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho |
+| C-7 | **Control de admisión / *load shedding*:** rechazar rápido con 429/503 cuando `waiting` supere un umbral, en lugar de dejar que la cola crezca | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| C-8 | **Test automático del orden de bloqueo** que falle si alguien vuelve a bloquear en orden distinto (la invariante deja de ser implícita) | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| C-9 | Autenticación en los endpoints `admin` | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| C-10 | Repetir `make load` tras el cambio de 500 → 503 en lecturas y guardar la evidencia (`verification.txt`) | Autora (proyecto individual) | 2026-09-19 | ✅ Hecho |
 
 ---
 
@@ -170,7 +179,7 @@ Al ejecutar `tests/incident/exhaust_pool.py` por primera vez con la primera vers
 |---|---|
 | Usuarios | Ninguno real. En producción habría sido una **segunda caída encima de la primera**: la API entera congelada, no solo las transferencias. |
 | Recursos | **~2,5 GB de RAM** en un contenedor de una máquina con 3,8 GB para Docker: al borde de matar otros contenedores por falta de memoria. |
-| Duración | **[COMPLETAR]** hora de inicio y de resolución (el commit de la corrección es del 2026-09-18, `916a8ff`). |
+| Duración | **No se registró la hora exacta** de inicio ni de resolución. Por git: ocurrió entre el commit de la Fase 6 (`9773503`, 21:32:23) y el ensayo guardado del pool agotado (22:35:10, ya con la versión corregida); la corrección quedó en `916a8ff` (23:05:18) del 2026-09-18. Ventana máxima ≈ 1 h 03 min, en la que se escribió, se vio fallar y se corrigió. |
 | Dinero | 0 |
 
 ## 3. Línea de tiempo
@@ -231,18 +240,18 @@ Responsable y fecha son **propuestas**: la autora debe confirmarlos.
 
 | # | Acción | Responsable | Fecha objetivo | Estado |
 |---|---|---|---|---|
-| I-8 | **Límites de memoria y CPU** por contenedor en el compose (`mem_limit`, `cpus`): un contenedor descontrolado se reinicia solo, sin arrastrar a los demás | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-9 | Alerta sobre memoria y CPU del contenedor de la API (cAdvisor / `docker stats` → Prometheus) | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| I-10 | Servir los endpoints `admin` desde un **proceso/instancia aparte**, para que una falla del diagnóstico no tumbe a las transferencias | [COMPLETAR] | [COMPLETAR] | Pendiente |
+| I-8 | **Límites de memoria y CPU** por contenedor en el compose (`mem_limit`, `cpus`): un contenedor descontrolado se reinicia solo, sin arrastrar a los demás | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-9 | Alerta sobre memoria y CPU del contenedor de la API (cAdvisor / `docker stats` → Prometheus) | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| I-10 | Servir los endpoints `admin` desde un **proceso/instancia aparte**, para que una falla del diagnóstico no tumbe a las transferencias | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
 
 ### 10.2 De código
 
 | # | Acción | Responsable | Fecha objetivo | Estado |
 |---|---|---|---|---|
-| C-11 | Reescribir `blocking-tree` como árbol de expansión lineal | Autora | 2026-09-18 | ✅ Hecho |
-| C-12 | Test de regresión con 200 sesiones en cola y con un ciclo | Autora | 2026-09-18 | ✅ Hecho |
-| C-13 | **Cotas explícitas** en todo endpoint de diagnóstico: máximo de nodos/filas devueltos y presupuesto de tiempo, para que ninguno pueda crecer sin límite | [COMPLETAR] | [COMPLETAR] | Pendiente |
-| C-14 | **Regla de equipo:** toda herramienta de diagnóstico se prueba con datos del tamaño del incidente (y se agrega a la lista de verificación de la PR) | [COMPLETAR] | [COMPLETAR] | Pendiente |
+| C-11 | Reescribir `blocking-tree` como árbol de expansión lineal | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho |
+| C-12 | Test de regresión con 200 sesiones en cola y con un ciclo | Autora (proyecto individual) | 2026-09-18 | ✅ Hecho |
+| C-13 | **Cotas explícitas** en todo endpoint de diagnóstico: máximo de nodos/filas devueltos y presupuesto de tiempo, para que ninguno pueda crecer sin límite | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
+| C-14 | **Regla de equipo:** toda herramienta de diagnóstico se prueba con datos del tamaño del incidente (y se agrega a la lista de verificación de la PR) | Autora (proyecto individual) | Sin fecha comprometida (ejercicio) | Pendiente |
 
 ---
 
