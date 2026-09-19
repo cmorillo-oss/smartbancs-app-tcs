@@ -1,0 +1,31 @@
+ Container smartbancs_app-postgres-1 Running 
+ Container smartbancs_app-transaction-api-1 Running 
+ Container smartbancs_app-postgres-1 Waiting 
+ Container smartbancs_app-postgres-1 Healthy 
+ Container smartbancs_app-transaction-api-1 Waiting 
+ Container smartbancs_app-transaction-api-1 Healthy 
+ Container smartbancs_app-tests-run-badc6c5e1a0f Creating 
+ Container smartbancs_app-tests-run-badc6c5e1a0f Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-8.3.4, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+rootdir: /tests
+configfile: pytest.ini
+plugins: asyncio-0.25.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 12 items
+
+unit/test_blocking_tree.py::test_sin_bloqueos PASSED                     [  8%]
+unit/test_blocking_tree.py::test_cadena_a_bloquea_b_bloquea_c PASSED     [ 16%]
+unit/test_blocking_tree.py::test_cola_densa_de_200_sesiones_es_lineal_y_rapida PASSED [ 25%]
+unit/test_blocking_tree.py::test_deadlock_en_curso_se_reporta_como_ciclo_sin_colgarse PASSED [ 33%]
+unit/test_circuit_breaker.py::test_cuatro_fallos_no_abren PASSED         [ 41%]
+unit/test_circuit_breaker.py::test_un_exito_reinicia_la_cuenta_los_fallos_deben_ser_consecutivos PASSED [ 50%]
+unit/test_circuit_breaker.py::test_cinco_fallos_consecutivos_abren_y_rechazan PASSED [ 58%]
+unit/test_circuit_breaker.py::test_pasa_a_half_open_a_los_30s_exactos PASSED [ 66%]
+unit/test_circuit_breaker.py::test_half_open_permite_una_sola_prueba PASSED [ 75%]
+unit/test_circuit_breaker.py::test_prueba_fallida_reabre_y_espera_otro_ciclo_completo PASSED [ 83%]
+unit/test_circuit_breaker.py::test_prueba_exitosa_cierra PASSED          [ 91%]
+unit/test_circuit_breaker.py::test_release_devuelve_el_permiso_sin_contar_fallo PASSED [100%]
+
+============================== 12 passed in 0.25s ==============================

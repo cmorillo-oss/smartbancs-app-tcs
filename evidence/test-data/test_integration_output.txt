@@ -1,0 +1,21 @@
+ Container smartbancs_app-postgres-1 Running 
+ Container smartbancs_app-transaction-api-1 Running 
+ Container smartbancs_app-postgres-1 Waiting 
+ Container smartbancs_app-postgres-1 Healthy 
+ Container smartbancs_app-transaction-api-1 Waiting 
+ Container smartbancs_app-transaction-api-1 Healthy 
+ Container smartbancs_app-tests-run-b7a3d26c7639 Creating 
+ Container smartbancs_app-tests-run-b7a3d26c7639 Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-8.3.4, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+rootdir: /tests
+configfile: pytest.ini
+plugins: asyncio-0.25.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 2 items
+
+integration/test_bancs_sync.py::test_transferencias_se_sincronizan_con_bancs PASSED [ 50%]
+integration/test_bancs_sync.py::test_conciliacion_detecta_discrepancia_real PASSED [100%]
+
+============================== 2 passed in 6.97s ===============================
