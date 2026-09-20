@@ -76,7 +76,7 @@ funciona igual en PowerShell y CMD).
 
 ### 4.1 Instalar
 ```bash
-git clone <URL-del-repositorio> smartbancs-app
+git clone https://github.com/cmorillo-oss/smartbancs-app-tcs.git smartbancs-app
 cd smartbancs-app
 cp .env.example .env        # opcional: el compose ya trae valores por defecto
 ```
