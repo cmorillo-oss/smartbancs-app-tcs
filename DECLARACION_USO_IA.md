@@ -22,7 +22,7 @@ Además usé Gemini para consultar explicaciones de algunos conceptos; no lo us�
 **Claude (chat)**
 - Análisis del enunciado y de sus tres restricciones: alta concurrencia, core legado Bancs y latencia menor a 2 segundos.
 - Definición del plan de trabajo en 8 fases y de las reglas técnicas del proyecto (por ejemplo: bloquear cuentas en orden fijo y no llamar a servicios externos dentro de una transacción).
-- Redacción de `CLAUDE_CODE_BRIEF.md`, la especificación que siguió Claude Code.
+- Transmisión directa a Claude Code de las instrucciones y la especificación del proyecto.
 - Guía para instalar el entorno de desarrollo (WSL2, Docker, Git y Python).
 - Explicaciones y cuestionarios para aprender el código, revisión de los resultados de cada fase y preparación de la defensa.
 
