@@ -13,8 +13,9 @@ En este proyecto usé inteligencia artificial de forma intensiva y lo declaro co
 |---|---|---|
 | Claude (chat, claude.ai) | Plan Pro | Análisis del reto, planificación, especificación, guía de instalación y aprendizaje |
 | Claude Code (CLI) | v2.1.277, Claude Sonnet 5 | Implementación del código, pruebas, scripts y documentación |
+| Gemini | — | Consulta de explicaciones de algunos conceptos; no lo usé para generar código ni documentación |
 
-No utilicé ninguna otra herramienta de IA.
+Además usé Gemini para consultar explicaciones de algunos conceptos; no lo usé para generar código ni documentación.
 
 ## 2. Cómo se utilizaron
 
