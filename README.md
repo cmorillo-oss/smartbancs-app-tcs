@@ -5,9 +5,6 @@ Está diseñada alrededor de tres restricciones del reto: **alta concurrencia** 
 no aguanta consultas en caliente, y **latencia < 2 s** sin que la IA estorbe nunca al flujo de dinero.
 Todo se levanta con un solo comando: `docker compose up`.
 
-**Video de demostración:** [`video/`](video/README.md)  
-**Presentación:** [`presentacion/`](presentacion/)
-
 > **Idea central en una frase:** las dos cuentas de cada transferencia se bloquean **siempre en orden ascendente de `account_id`**
 > (evita deadlocks), y todo lo lento o poco fiable (IA, Bancs) se hace **después**, en segundo plano, a través de un *outbox*.
 
